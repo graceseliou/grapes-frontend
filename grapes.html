@@ -59,6 +59,7 @@
             border-radius: 8px;
             padding: 16px;
             transition: all 0.3s ease;
+            cursor: pointer;
         }
         
         .folder:hover {
@@ -110,7 +111,29 @@
         .action-btn:hover {
             border-color: var(--text-primary);
         }
-        
+
+        .folder-items-list {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .folder-items-list li {
+            background-color: #282828;
+            color: var(--text-primary);
+            padding: 12px;
+            border-radius: 4px;
+            margin-bottom: 8px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .folder-items-list li:hover {
+            background-color: #3a3a3a;
+        }
+
         .modal {
             display: none;
             position: fixed;
@@ -128,8 +151,9 @@
             background-color: var(--background-highlight);
             padding: 24px;
             border-radius: 8px;
-            width: 400px;
+            width: 500px;
             max-width: 90%;
+            overflow-y: auto;
         }
         
         .modal-title {
@@ -181,7 +205,7 @@
     </style>
 </head>
 <body>
-    <h1 class="title">Group Project: Folders Reimagined</h1>
+    <h1 class="title">ETI 300W Group Project: Folders Reimagined</h1>
     <button id="createFolderBtn" class="btn">Create New Folder</button>
     
     <div class="folders-container" id="foldersContainer">
@@ -213,21 +237,51 @@
             </form>
         </div>
     </div>
+
+    <!-- Folder Items Modal -->
+    <div class="modal" id="folderItemsModal">
+        <div class="modal-content">
+            <h2 class="modal-title" id="folderItemsModalTitle">Folder Items</h2>
+            <ul id="folderItemsList" class="folder-items-list">
+                <!-- Items will be dynamically added here -->
+            </ul>
+            <div class="modal-actions">
+                <button type="button" id="closeFolderItemsModal" class="btn cancel-btn">Close</button>
+            </div>
+        </div>
+    </div>
     
     <script>
-        const API_BASE_URL = 'http://54.146.244.229'; // Replace with your API server's public IP
+        const API_BASE_URL = 'http://34.224.58.212'; 
         
         document.addEventListener('DOMContentLoaded', () => {
             loadFolders();
             
-            // Modal elements
+            // Modal elements for folder items
+            const folderItemsModal = document.getElementById('folderItemsModal');
+            const closeFolderItemsModal = document.getElementById('closeFolderItemsModal');
+            const folderItemsList = document.getElementById('folderItemsList');
+
+            // Show folder items when a folder is clicked
+            document.addEventListener('click', async (event) => {
+                if (event.target && event.target.classList.contains('folder')) {
+                    const folderId = event.target.getAttribute('data-id');
+                    await loadFolderItems(folderId);
+                }
+            });
+
+            // Close the folder items modal
+            closeFolderItemsModal.addEventListener('click', () => {
+                folderItemsModal.style.display = 'none';
+            });
+            
+            // Show modal for creating new folder
             const modal = document.getElementById('folderModal');
             const createBtn = document.getElementById('createFolderBtn');
             const cancelBtn = document.getElementById('cancelBtn');
             const folderForm = document.getElementById('folderForm');
             const modalTitle = document.getElementById('modalTitle');
             
-            // Show modal for creating new folder
             createBtn.addEventListener('click', () => {
                 modalTitle.textContent = 'Create New Folder';
                 folderForm.reset();
@@ -235,12 +289,11 @@
                 modal.style.display = 'flex';
             });
             
-            // Hide modal
             cancelBtn.addEventListener('click', () => {
                 modal.style.display = 'none';
             });
-            
-            // Handle form submission
+
+            // Handle form submission for folder creation/edit
             folderForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 
@@ -283,6 +336,7 @@
                 folders.forEach(folder => {
                     const folderElement = document.createElement('div');
                     folderElement.className = 'folder';
+                    folderElement.setAttribute('data-id', folder.id);
                     folderElement.innerHTML = `
                         <img src="${folder.image_url}" alt="${folder.name}" class="folder-img" onerror="this.src='https://via.placeholder.com/200'">
                         <h3 class="folder-name">${folder.name}</h3>
@@ -316,26 +370,32 @@
                 console.error('Error loading folders:', error);
             }
         }
-        
-        // Load folder data for editing
-        async function loadFolderForEdit(folderId) {
-            try {
-                const response = await fetch(`${API_BASE_URL}/folders.php?id=${folderId}`);
-                const folder = await response.json();
-                
-                document.getElementById('modalTitle').textContent = 'Edit Folder';
-                document.getElementById('folderId').value = folder.id;
-                document.getElementById('folderName').value = folder.name;
-                document.getElementById('folderImage').value = folder.image_url;
-                document.getElementById('folderDesc').value = folder.description;
-                
-                document.getElementById('folderModal').style.display = 'flex';
-            } catch (error) {
-                console.error('Error loading folder for edit:', error);
-                alert('Failed to load folder data. Please try again.');
-            }
+
+        // Load folder items (random songs for simplicity)
+        async function loadFolderItems(folderId) {
+            // Example data (random songs)
+            const folderItems = [
+                { title: 'Song 1', artist: 'Artist A' },
+                { title: 'Song 2', artist: 'Artist B' },
+                { title: 'Song 3', artist: 'Artist C' },
+                { title: 'Song 4', artist: 'Artist D' },
+                { title: 'Song 5', artist: 'Artist E' }
+            ];
+            
+            // Clear the current folder items list
+            folderItemsList.innerHTML = '';
+            
+            // Populate the list with items
+            folderItems.forEach(item => {
+                const listItem = document.createElement('li');
+                listItem.textContent = `${item.title} - ${item.artist}`;
+                folderItemsList.appendChild(listItem);
+            });
+
+            // Show the folder items modal
+            folderItemsModal.style.display = 'flex';
         }
-        
+
         // Create new folder
         async function createFolder(folderData) {
             try {
@@ -355,7 +415,7 @@
                 throw error;
             }
         }
-        
+
         // Update existing folder
         async function updateFolder(folderData) {
             try {
@@ -375,7 +435,7 @@
                 throw error;
             }
         }
-        
+
         // Delete folder
         async function deleteFolder(folderId) {
             try {
